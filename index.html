@@ -8,131 +8,32 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; color: #1e293b; }
-    .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); }
-    .gradient-btn { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); transition: all 0.3s ease; }
-    .gradient-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4); }
-    pre { white-space: pre-wrap; font-family: inherit; }
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f8fafc;
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
   </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-start py-12 px-4">
-  <div class="w-full max-w-3xl">
-    <!-- Header -->
-    <div class="text-center mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
-      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white mb-4 shadow-xl">
-        <i class="fa-solid fa-graduation-cap text-2xl"></i>
-      </div>
-      <h1 class="text-4xl font-800 tracking-tight text-slate-900 mb-2">GetHelpForStudy</h1>
-      <p class="text-slate-500 text-lg font-medium">Generate professional study presentation outlines in seconds.</p>
-    </div>
-
-    <!-- Input Section -->
-    <div class="glass-card p-6 rounded-3xl shadow-xl shadow-slate-200/50 mb-8 transition-all">
-      <div class="flex flex-col sm:flex-row gap-4">
-        <div class="relative flex-1">
-          <i class="fa-solid fa-book-open absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-          <input 
-            type="text" 
-            id="topicInput" 
-            placeholder="What are you studying today?" 
-            class="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-lg"
-          >
-        </div>
-        <button 
-          id="generateBtn" 
-          class="gradient-btn text-white px-8 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
-        >
-          <span id="btnText">Generate Outline</span>
-          <i id="btnIcon" class="fa-solid fa-wand-magic-sparkles"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Feedback States -->
-    <div id="loading" class="hidden text-center py-12">
-      <div class="relative inline-block">
-        <div class="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-      </div>
-      <p class="text-slate-500 font-semibold mt-4">Analyzing topic and structuring slides...</p>
-    </div>
-
-    <div id="error" class="hidden bg-red-50 border border-red-100 text-red-600 p-4 rounded-2xl mb-8 text-center font-medium"></div>
-
-    <!-- Output Section -->
-    <div id="result" class="hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-          <i class="fa-solid fa-list-check text-indigo-500"></i>
-          Suggested Outline
-        </h2>
-        <button id="copyBtn" class="text-slate-400 hover:text-indigo-600 transition-colors p-2 rounded-lg hover:bg-white">
-          <i class="fa-solid fa-copy text-xl"></i>
-        </button>
-      </div>
-      <div class="glass-card p-8 rounded-3xl shadow-sm border border-slate-100">
-        <div id="outputContent" class="prose prose-slate max-w-none text-slate-700 leading-relaxed"></div>
-      </div>
-    </div>
-  </div>
-
-  <footer class="mt-auto pt-12 pb-6 text-center text-slate-400 text-sm font-medium">
-    <p>GetHelpForStudy &bull; Powered by Vercel & Gemini AI</p>
-  </footer>
-
-  <script>
-    const topicInput = document.getElementById('topicInput');
-    const generateBtn = document.getElementById('generateBtn');
-    const btnText = document.getElementById('btnText');
-    const btnIcon = document.getElementById('btnIcon');
-    const loading = document.getElementById('loading');
-    const result = document.getElementById('result');
-    const errorDiv = document.getElementById('error');
-    const outputContent = document.getElementById('outputContent');
-    const copyBtn = document.getElementById('copyBtn');
-
-    async function handleGenerate() {
-      const topic = topicInput.value.trim();
-      if (!topic) return;
-
-      // Reset
-      errorDiv.classList.add('hidden');
-      result.classList.add('hidden');
-      loading.classList.remove('hidden');
-      generateBtn.disabled = true;
-      btnText.innerText = "Processing...";
-      btnIcon.className = "fa-solid fa-circle-notch animate-spin";
-
-      try {
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic })
-        });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Failed to generate');
-
-        // Simple formatting for display
-        const htmlContent = data.output
-          .split('\n')
-          .map(line => {
-            if (line.toLowerCase().startsWith('slide')) {
-              return `<h3 class="text-indigo-600 font-bold mt-6 mb-2 text-lg">${line}</h3>`;
-            }
-            if (line.trim().startsWith('-') || line.trim().startsWith('*')) {
-              return `<div class="flex gap-2 mb-1 pl-2"><span>•</span><span>${line.replace(/^[-*]\s*/, '')}</span></div>`;
-            }
-            return `<p class="mb-2">${line}</p>`;
-          })
-          .join('');
-
-        outputContent.innerHTML = htmlContent;
-        result.classList.remove('hidden');
-        result.scrollIntoView({ behavior: 'smooth' });
-      } catch (err) {
-        errorDiv.innerText = err.message;
-        errorDiv.classList.remove('hidden');
-      } finally {
-        loading.classList.add('hidden');
-        generateBtn
+<body>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

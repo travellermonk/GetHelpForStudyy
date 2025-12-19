@@ -1,3 +1,10 @@
 
-// This file is intentionaly empty to support a Vanilla JS project structure
-// within the existing preview environment constraints.
+import React from 'react';
+import { createRoot } from 'react/client';
+import App from './App';
+
+const container = document.getElementById('root');
+if (container) {
+  const root = createRoot(container);
+  root.render(<App />);
+}

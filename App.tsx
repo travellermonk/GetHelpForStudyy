@@ -16,7 +16,6 @@ const App: React.FC = () => {
 
     setStatus(GenerationStatus.LOADING);
     setError(null);
-    setResult(null);
 
     try {
       const outline = await generatePPTOutline(topic);
@@ -24,140 +23,177 @@ const App: React.FC = () => {
       setStatus(GenerationStatus.SUCCESS);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'An unexpected error occurred. Please try again.');
+      setError(err.message || 'Failed to connect to Gemini. Make sure your API key is configured correctly in your environment.');
       setStatus(GenerationStatus.ERROR);
     }
   };
 
   const handleCopy = useCallback(() => {
     if (!result) return;
-    const text = result.slides.map(s => 
-      `Slide ${s.slideNumber}: ${s.title}\n${s.bulletPoints.map(p => `- ${p}`).join('\n')}\n`
-    ).join('\n---\n\n');
+    const text = `TITLE: ${result.presentationTitle}\n\n` + 
+      result.slides.map(s => 
+        `SLIDE ${s.slideNumber}: ${s.title}\n${s.bulletPoints.map(p => `• ${p}`).join('\n')}\n[Visual]: ${s.visualSuggestion}\n`
+      ).join('\n---\n\n');
     
     navigator.clipboard.writeText(text);
-    alert('Outline copied to clipboard!');
+    alert('Full outline copied to clipboard!');
   }, [result]);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="gradient-bg text-white py-12 px-4 shadow-lg">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-6 backdrop-blur-sm border border-white/30">
-            <i className="fa-solid fa-graduation-cap text-3xl"></i>
+    <div className="min-h-screen flex flex-col pb-20">
+      {/* Navbar Style Header */}
+      <header className="gradient-bg text-white pt-16 pb-24 px-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+        <div className="max-w-5xl mx-auto text-center relative z-10">
+          <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/10 rounded-full backdrop-blur-md border border-white/20 mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
+            <i className="fa-solid fa-sparkles text-amber-300"></i>
+            <span className="text-sm font-semibold tracking-wide uppercase">AI-Powered Study Assistant</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">
+          <h1 className="text-5xl md:text-6xl font-extrabold mb-6 tracking-tight">
             GetHelpForStudy
           </h1>
-          <p className="text-indigo-100 text-lg md:text-xl font-medium max-w-2xl mx-auto">
-            Instantly generate a structured PowerPoint outline for any study topic.
+          <p className="text-indigo-100 text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed">
+            Turn your research topics into professional PowerPoint structures. 
+            Perfect for students, teachers, and researchers.
           </p>
         </div>
       </header>
 
-      <main className="flex-grow max-w-6xl mx-auto w-full px-4 -mt-8 pb-20">
-        {/* Input Section */}
-        <section className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-10 border border-slate-100">
+      <main className="flex-grow max-w-5xl mx-auto w-full px-6 -mt-12 relative z-20">
+        {/* Search Bar */}
+        <section className="bg-white rounded-3xl shadow-2xl shadow-indigo-100/50 p-4 md:p-6 mb-12 border border-slate-100">
           <form onSubmit={handleGenerate} className="flex flex-col md:flex-row gap-4">
             <div className="flex-grow relative">
-              <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <i className="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
               <input
                 type="text"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder="Enter a topic (e.g., Quantum Mechanics, The French Revolution, React Basics)..."
-                className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-slate-700 font-medium"
+                placeholder="What are you studying? (e.g., The Industrial Revolution, Neural Networks...)"
+                className="w-full pl-14 pr-6 py-5 rounded-2xl bg-slate-50 border-none focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-slate-800 text-lg font-medium placeholder:text-slate-400"
                 disabled={status === GenerationStatus.LOADING}
               />
             </div>
             <button
               type="submit"
               disabled={status === GenerationStatus.LOADING || !topic.trim()}
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 min-w-[160px]"
+              className="px-10 py-5 gradient-btn text-white rounded-2xl font-bold shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:grayscale"
             >
               {status === GenerationStatus.LOADING ? (
                 <>
-                  <i className="fa-solid fa-circle-notch animate-spin"></i>
-                  Generating...
+                  <i className="fa-solid fa-spinner animate-spin"></i>
+                  Researching...
                 </>
               ) : (
                 <>
                   <i className="fa-solid fa-wand-magic-sparkles"></i>
-                  Create Outline
+                  Build PPT
                 </>
               )}
             </button>
           </form>
         </section>
 
-        {/* Loading State */}
+        {/* Loading / Error States */}
         {status === GenerationStatus.LOADING && (
-          <div className="text-center py-20">
-            <div className="inline-block relative">
-               <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+          <div className="text-center py-20 animate-pulse">
+            <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-6">
+               <i className="fa-solid fa-brain text-indigo-600 text-3xl animate-bounce"></i>
             </div>
-            <h2 className="text-xl font-bold text-slate-800 mt-6">Crafting your presentation...</h2>
-            <p className="text-slate-500 mt-2">Gemini is analyzing the topic and structuring slides for you.</p>
+            <h2 className="text-2xl font-bold text-slate-800">Gemini is brainstorming...</h2>
+            <p className="text-slate-500 mt-2 max-w-sm mx-auto">Structuring content, drafting bullet points, and finding visual inspirations.</p>
           </div>
         )}
 
-        {/* Error State */}
         {status === GenerationStatus.ERROR && (
-          <div className="bg-red-50 border border-red-100 rounded-xl p-6 text-center">
-            <i className="fa-solid fa-triangle-exclamation text-red-500 text-3xl mb-4"></i>
-            <h3 className="text-red-800 font-bold text-lg">Failed to generate</h3>
-            <p className="text-red-600 mt-1">{error}</p>
+          <div className="bg-red-50 border-2 border-red-100 rounded-3xl p-10 text-center max-w-2xl mx-auto shadow-sm">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <i className="fa-solid fa-triangle-exclamation text-2xl"></i>
+            </div>
+            <h3 className="text-red-900 font-bold text-xl mb-2">Something went wrong</h3>
+            <p className="text-red-600 mb-8">{error}</p>
             <button 
               onClick={() => setStatus(GenerationStatus.IDLE)}
-              className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 font-bold transition-colors"
+              className="px-6 py-3 bg-white border border-red-200 text-red-600 rounded-xl font-bold hover:bg-red-50 transition-colors"
             >
               Try Again
             </button>
           </div>
         )}
 
-        {/* Results Section */}
-        {result && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+        {/* Success Results */}
+        {result && status === GenerationStatus.SUCCESS && (
+          <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
               <div>
-                <p className="text-indigo-600 font-bold text-sm uppercase tracking-widest mb-1">Generated Outline</p>
-                <h2 className="text-3xl font-extrabold text-slate-900">{result.presentationTitle}</h2>
-                <p className="text-slate-500 mt-1">Suggested for: <span className="text-slate-700 font-medium">{result.targetAudience}</span></p>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full uppercase tracking-widest">
+                    Study Topic: {result.topic}
+                  </span>
+                </div>
+                <h2 className="text-4xl font-extrabold text-slate-900 leading-tight">
+                  {result.presentationTitle}
+                </h2>
+                <p className="text-slate-500 mt-2">
+                  Target Audience: <span className="font-semibold text-slate-700">{result.targetAudience}</span>
+                </p>
               </div>
               <button 
                 onClick={handleCopy}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-bold transition-all shadow-md active:scale-95"
+                className="group flex items-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-2xl font-bold transition-all hover:bg-slate-800 hover:-translate-y-1 active:scale-95 shadow-xl shadow-slate-200"
               >
-                <i className="fa-solid fa-copy"></i>
-                Copy to Clipboard
+                <i className="fa-solid fa-copy group-hover:text-indigo-400 transition-colors"></i>
+                Copy Full Outline
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
               {result.slides.map((slide) => (
                 <SlideCard key={slide.slideNumber} slide={slide} />
               ))}
             </div>
 
-            <footer className="mt-16 text-center border-t border-slate-200 pt-10">
-              <p className="text-slate-400 text-sm">
-                Generated with ❤️ for students using Google Gemini AI.
+            <div className="mt-16 bg-indigo-600 rounded-3xl p-12 text-center text-white shadow-2xl shadow-indigo-200">
+              <i className="fa-solid fa-graduation-cap text-5xl mb-6 opacity-50"></i>
+              <h3 className="text-2xl font-bold mb-4">Ready for your presentation?</h3>
+              <p className="text-indigo-100 max-w-xl mx-auto mb-8">
+                This outline provides the skeletal structure. Now, open PowerPoint or Google Slides and bring these concepts to life!
               </p>
-            </footer>
+              <button 
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="bg-white text-indigo-600 px-8 py-4 rounded-xl font-bold hover:bg-indigo-50 transition-all"
+              >
+                Start New Research
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Empty State */}
-        {status === GenerationStatus.IDLE && !result && (
-          <div className="text-center py-20 opacity-40">
-            <i className="fa-solid fa-file-powerpoint text-7xl text-slate-300 mb-6"></i>
-            <h2 className="text-2xl font-bold text-slate-400">Ready to build your PPT?</h2>
-            <p className="text-slate-400 mt-2">Just type your topic above to get started.</p>
+        {/* Placeholder / Empty State */}
+        {status === GenerationStatus.IDLE && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 opacity-60">
+            <div className="p-8 border-2 border-dashed border-slate-200 rounded-3xl text-center">
+              <i className="fa-solid fa-lightbulb text-slate-300 text-4xl mb-4"></i>
+              <h4 className="font-bold text-slate-400">Step 1: Topic</h4>
+              <p className="text-sm text-slate-400 mt-2">Enter any concept from your syllabus or research paper.</p>
+            </div>
+            <div className="p-8 border-2 border-dashed border-slate-200 rounded-3xl text-center">
+              <i className="fa-solid fa-microchip text-slate-300 text-4xl mb-4"></i>
+              <h4 className="font-bold text-slate-400">Step 2: AI Magic</h4>
+              <p className="text-sm text-slate-400 mt-2">Gemini analyzes and structures it into academic slides.</p>
+            </div>
+            <div className="p-8 border-2 border-dashed border-slate-200 rounded-3xl text-center">
+              <i className="fa-solid fa-file-powerpoint text-slate-300 text-4xl mb-4"></i>
+              <h4 className="font-bold text-slate-400">Step 3: Export</h4>
+              <p className="text-sm text-slate-400 mt-2">Copy the outline and paste it into your slides editor.</p>
+            </div>
           </div>
         )}
       </main>
+
+      <footer className="mt-12 text-center text-slate-400 text-sm">
+        Powered By Gemini & Techno Tank with Dev Monk
+      </footer>
     </div>
   );
 };

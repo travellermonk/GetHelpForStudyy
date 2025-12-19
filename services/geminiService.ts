@@ -2,14 +2,15 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { PPTOutline } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
-
 export const generatePPTOutline = async (topic: string): Promise<PPTOutline> => {
-  const model = ai.models.generateContent({
+  // Use process.env.API_KEY exclusively as per requirements
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
+
+  const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: `Generate a detailed PowerPoint presentation outline for the topic: "${topic}". 
-    The outline should be educational, structured for a student or professional presentation, and include at least 7-10 slides.
-    Include a clear introduction, core concepts, case studies or examples, and a conclusion.`,
+    contents: `Generate a detailed PowerPoint presentation outline for the study topic: "${topic}". 
+    The outline should be educational, professional, and include 7-10 slides.
+    Include introduction, core theories, real-world applications, and a summary.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -29,7 +30,7 @@ export const generatePPTOutline = async (topic: string): Promise<PPTOutline> => 
                   type: Type.ARRAY,
                   items: { type: Type.STRING }
                 },
-                visualSuggestion: { type: Type.STRING }
+                visualSuggestion: { type: Type.STRING, description: "Detailed description of an image or chart for this slide" }
               },
               required: ["slideNumber", "title", "bulletPoints", "visualSuggestion"]
             }
@@ -40,17 +41,8 @@ export const generatePPTOutline = async (topic: string): Promise<PPTOutline> => 
     }
   });
 
-  const response = await model;
   const resultText = response.text;
-  
-  if (!resultText) {
-    throw new Error("Failed to generate content from AI");
-  }
+  if (!resultText) throw new Error("AI failed to generate a response.");
 
-  try {
-    return JSON.parse(resultText) as PPTOutline;
-  } catch (err) {
-    console.error("JSON Parsing error:", err);
-    throw new Error("AI returned invalid JSON structure.");
-  }
+  return JSON.parse(resultText) as PPTOutline;
 };

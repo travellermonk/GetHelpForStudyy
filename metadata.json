@@ -1,0 +1,5 @@
+{
+  "name": "GetHelpForStudy - AI PPT Generator",
+  "description": "Transform any study topic into a structured presentation outline with professional slide content and visual suggestions using Gemini AI.",
+  "requestFramePermissions": []
+}

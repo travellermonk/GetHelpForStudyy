@@ -1,5 +1,5 @@
 {
-  "name": "GetHelpForStudy - AI PPT Generator",
-  "description": "Transform any study topic into a structured presentation outline with professional slide content and visual suggestions using Gemini AI.",
+  "name": "GetHelpForStudy - Full Stack AI PPT",
+  "description": "Vercel-ready full-stack application using Node.js serverless functions and Gemini AI to generate study outlines.",
   "requestFramePermissions": []
 }
